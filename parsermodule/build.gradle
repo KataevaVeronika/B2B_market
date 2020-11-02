@@ -1,0 +1,17 @@
+plugins {
+    id 'java'
+}
+
+group 'com.pupptmstr'
+version '0.1'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    implementation 'technology.tabula:tabula:1.0.4'
+    implementation 'org.apache.pdfbox:pdfbox:2.0.21'
+    implementation 'com.google.code.gson:gson:2.8.6'
+}
