@@ -14,7 +14,10 @@ repositories {
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    compile 'org.slf4j:slf4j-api:1.7.30'
+    compile 'ch.qos.logback:logback-core:1.2.3'
+    compile 'ch.qos.logback:logback-classic:1.2.3'
+    implementation 'org.springframework.boot:spring-boot-starter-tomcat:2.4.0'
     implementation 'technology.tabula:tabula:1.0.4'
     implementation 'org.apache.pdfbox:pdfbox:2.0.21'
     implementation 'com.google.code.gson:gson:2.8.6'
