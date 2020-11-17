@@ -165,10 +165,6 @@ public class PdfParser {
         return res;
     }
 
-    //А-Яа-я  - \u0410-\u042f\u0430-\u044f
-    //А-Я     - \u0410-\u042f
-    //а-я     - \u0430-\u044f
-
     private static Item createItem(String line) {
         Pattern groupPattern =
                 Pattern.compile("(([0-9]+.)( \\|))(( [^|]+)( \\|))(( [^|]+)( \\|))?((.+)( \\|))?(( [A-Za-z\\u0410-\\u042f\\u0430-\\u044f]+)( \\|))?(( [\\u0430-\\u044f0-9. ]+)( \\|))(( [0-9.,/]+)( \\|))(( [0-9.,]+)( \\|))?(.+( \\|))?");
