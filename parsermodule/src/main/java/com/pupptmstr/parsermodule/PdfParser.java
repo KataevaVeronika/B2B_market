@@ -2,7 +2,11 @@ package com.pupptmstr.parsermodule;
 
 import java.io.*;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.apache.pdfbox.pdmodel.PDDocument;
 
 import technology.tabula.ObjectExtractor;
@@ -26,7 +30,8 @@ public class PdfParser {
 
         List<String> unformattedTexts = new ArrayList<>();
         List<String> formattedTexts = new ArrayList<>();
-
+        List<List<ItemGroup>> parsedJsons = new ArrayList<>();
+        List<String> doneJsons = new ArrayList<>();
 
         for (File file : files) {
             unformattedTexts.add(getTextFromPDF(file));
@@ -36,7 +41,18 @@ public class PdfParser {
             formattedTexts.add(clearText(unformattedText));
         }
 
-        return new ArrayList<>(formattedTexts);
+        for (String formattedText : formattedTexts) {
+            parsedJsons.add(parseJson(formattedText));
+        }
+
+        GsonBuilder builder = new GsonBuilder().setPrettyPrinting();
+        Gson gson = builder.create();
+
+        for (List<ItemGroup> listOfItemGroups : parsedJsons) {
+            doneJsons.add(gson.toJson(listOfItemGroups));
+        }
+
+        return new ArrayList<>(doneJsons);
     }
 
     private static String getTextFromPDF(File file) throws IOException {
@@ -83,18 +99,22 @@ public class PdfParser {
         StringBuilder clearText = new StringBuilder();
         boolean isShouldSkip = false;
         String[] splitText = text.split("__--__--__");
-        clearText.append("__--__--__\n");
+        clearText.append("\n__--__--__\n");
         for (String line : splitText) {
             String[] splitLineInline = line.split("\n");
             for (String lineInline : splitLineInline) {
                 String currentLine = lineInline.strip().replace("\r", " ");
-                if (!currentLine.contains("Лист") && !currentLine.startsWith("Поз") && !currentLine.startsWith("Наименование") && !isShouldSkip) {
+                if (!currentLine.contains("Лист")
+                        && !currentLine.startsWith("Поз")
+                        && !currentLine.startsWith("Наименование")
+                        && !currentLine.contains("Проверил")
+                        && !isShouldSkip) {
                     clearText.append(" ").append(currentLine);
                 }
                 if (isShouldSkip) {
                     isShouldSkip = false;
                 }
-                if (currentLine.contains("Лист")) {
+                if (currentLine.contains("Лист") || currentLine.contains("Проверил")) {
                     isShouldSkip = true;
                 }
             }
@@ -111,5 +131,56 @@ public class PdfParser {
         result = clearText.toString();
 
         return result;
+    }
+
+    private static List<ItemGroup> parseJson(String formattedText) {
+        Pattern partOfFirstCellPattern =
+                Pattern.compile("(([0-9]+.?)( \\| ))([A-Za-z\\u0410-\\u042f\\u0430-\\u044f0-9()\\-=,./ ]+( \\|))+");
+        List<ItemGroup> res = new ArrayList<>();
+        ItemGroup itemGroup = new ItemGroup("");
+        String[] splitText = formattedText.split("\n");
+        for (int i = 0; i < splitText.length; i++) {
+            String currentLine = splitText[i];
+            Matcher currentMatcher = partOfFirstCellPattern.matcher(currentLine);
+            String nextLine = null;
+            Matcher nextLineMatcher = null;
+            if (i != splitText.length - 1) {
+                nextLine = splitText[i+1];
+                nextLineMatcher = partOfFirstCellPattern.matcher(nextLine);
+            }
+
+            if (currentMatcher.matches())  {
+                itemGroup.items.add(createItem(currentLine));
+            } else {
+                if (nextLineMatcher != null) {
+                    if (nextLineMatcher.matches()) {
+                        res.add(itemGroup);
+                        itemGroup = new ItemGroup(currentLine);
+                    }
+                }
+            }
+
+        }
+
+        return res;
+    }
+
+    //А-Яа-я  - \u0410-\u042f\u0430-\u044f
+    //А-Я     - \u0410-\u042f
+    //а-я     - \u0430-\u044f
+
+    private static Item createItem(String line) {
+        Pattern groupPattern =
+                Pattern.compile("(([0-9]+.)( \\|))(( [^|]+)( \\|))(( [^|]+)( \\|))?((.+)( \\|))?(( [A-Za-z\\u0410-\\u042f\\u0430-\\u044f]+)( \\|))?(( [\\u0430-\\u044f0-9. ]+)( \\|))(( [0-9.,/]+)( \\|))(( [0-9.,]+)( \\|))?(.+( \\|))?");
+        Item res = new Item ("", "", "", "");
+        Matcher matcher = groupPattern.matcher(line);
+        if (matcher.matches()) {
+            try {
+                res = new Item(matcher.group(5), matcher.group(11), matcher.group(20), matcher.group(17));
+            } catch (IndexOutOfBoundsException e) {
+                //res stays empty
+            }
+        }
+        return res;
     }
 }

@@ -22,7 +22,7 @@ public class Main {
 
             List<String> listOfResults = PdfParser.parse(list);
             for (int i = 0; i < listOfResults.size(); i++) {
-                File outputFile = new File("res/" + list.get(i).getName().replace(".pdf", "") + ".txt");
+                File outputFile = new File("res/" + list.get(i).getName().replace(".pdf", "") + ".json");
                 if (outputFile.exists()) {
                     outputFile.delete();
                 }
