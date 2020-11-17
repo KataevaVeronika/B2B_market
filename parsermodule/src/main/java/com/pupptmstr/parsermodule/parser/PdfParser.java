@@ -1,4 +1,4 @@
-package com.pupptmstr.parsermodule;
+package com.pupptmstr.parsermodule.parser;
 
 import java.io.*;
 import java.util.*;
