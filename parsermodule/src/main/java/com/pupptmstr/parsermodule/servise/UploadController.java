@@ -19,11 +19,11 @@ public class UploadController {
     @GetMapping("/parse")
     public String parse() throws IOException {
 
-        return "Use POST request with @RequestParam('files')";
+        return "Use POST requests with @RequestParam('files')";
     }
 
-    @PostMapping("/parse")
-    public ResponseEntity<ResponseModel> parse(
+    @PostMapping("/parse/document")
+    public ResponseEntity<ResponseModel> parseDocument(
         @RequestParam("files") MultipartFile[] files) throws IOException {
         Map<String, List<ItemGroup>> parsedFiles = new HashMap<>();
         List<String> errors = new ArrayList<>();
@@ -61,5 +61,13 @@ public class UploadController {
         }
         ResponseModel res = new ResponseModel(parsedFiles, errors);
         return new ResponseEntity<>(res, HttpStatus.OK);
+    }
+
+    @PostMapping("/parse/studentbook")
+    public ResponseEntity<String> parseStudentBook(
+        @RequestParam("file") MultipartFile file
+    ) {
+        //todo("сдлеать парс учебника здесь")
+        return new ResponseEntity<>("не вышло", HttpStatus.UNSUPPORTED_MEDIA_TYPE);
     }
 }
