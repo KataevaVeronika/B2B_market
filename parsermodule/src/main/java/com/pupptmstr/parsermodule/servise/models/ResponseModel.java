@@ -11,6 +11,21 @@ public class ResponseModel {
     @SerializedName("ErrorsIn")
     List<String> errors;
 
+    public List<ResponseFileModel> getSuccessFiles() {
+        return successFiles;
+    }
+
+    public void setSuccessFiles(final List<ResponseFileModel> successFiles) {
+        this.successFiles = successFiles;
+    }
+
+    public List<String> getErrors() {
+        return errors;
+    }
+
+    public void setErrors(final List<String> errors) {
+        this.errors = errors;
+    }
 
     public ResponseModel(Map<String, List<ItemGroup>> parsedFiles, List<String> errors) {
         this.errors = errors;

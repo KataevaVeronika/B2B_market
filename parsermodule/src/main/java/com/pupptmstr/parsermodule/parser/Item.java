@@ -7,6 +7,39 @@ public class Item {
     String itemAndModel;
     @SerializedName("Manufacturer")
     String manufacturer;
+
+    public String getItemAndModel() {
+        return itemAndModel;
+    }
+
+    public void setItemAndModel(final String itemAndModel) {
+        this.itemAndModel = itemAndModel;
+    }
+
+    public String getManufacturer() {
+        return manufacturer;
+    }
+
+    public void setManufacturer(final String manufacturer) {
+        this.manufacturer = manufacturer;
+    }
+
+    public String getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(final String quantity) {
+        this.quantity = quantity;
+    }
+
+    public String getMeasure() {
+        return measure;
+    }
+
+    public void setMeasure(final String measure) {
+        this.measure = measure;
+    }
+
     @SerializedName("Quantity")
     String quantity;
     @SerializedName("Measure")
