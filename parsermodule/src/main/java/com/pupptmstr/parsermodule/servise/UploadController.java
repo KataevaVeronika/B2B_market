@@ -24,7 +24,7 @@ public class UploadController {
 
     @PostMapping("/parse/document")
     public ResponseEntity<ResponseModel> parseDocument(
-        @RequestParam("files") MultipartFile[] files) throws IOException {
+            @RequestParam("files") MultipartFile[] files) throws IOException {
         Map<String, List<ItemGroup>> parsedFiles = new HashMap<>();
         List<String> errors = new ArrayList<>();
         for (MultipartFile file : files) {
@@ -35,10 +35,10 @@ public class UploadController {
                     try {
                         byte[] bytes = file.getBytes();
                         BufferedOutputStream stream =
-                            new BufferedOutputStream(new FileOutputStream(new File(filename)));
+                                new BufferedOutputStream(new FileOutputStream(new File(filename)));
                         stream.write(bytes);
                         stream.close();
-                        parsedFiles.put(filename, PdfParser.parse(fileToParse));
+                        parsedFiles.put(filename, PdfParser.parseDocument(fileToParse));
                         if (fileToParse.delete()) {
                             System.out.println("INFO  : " + filename + " deleted");
                         } else {
@@ -65,9 +65,50 @@ public class UploadController {
 
     @PostMapping("/parse/studentbook")
     public ResponseEntity<String> parseStudentBook(
-        @RequestParam("file") MultipartFile file
+            @RequestParam("file") MultipartFile file
     ) {
-        //todo("сдлеать парс учебника здесь")
-        return new ResponseEntity<>("не вышло", HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+        //todo("Придумать что-то с djvu")
+        String text = null;
+        String filename = file.getOriginalFilename();
+        if (filename != null) {
+            File fileToParse = new File(filename);
+            if (!file.isEmpty()) {
+                try {
+                    byte[] bytes = file.getBytes();
+                    BufferedOutputStream stream =
+                            new BufferedOutputStream(new FileOutputStream(new File(filename)));
+                    stream.write(bytes);
+                    stream.close();
+                    String extension = getFileExtension(filename);
+
+                    if (extension.equals("pdf")) {
+                        text = PdfParser.parseTextBook(fileToParse);
+                    }
+
+                    if (fileToParse.delete()) {
+                        System.out.println("INFO  : " + filename + " deleted");
+                    } else {
+                        System.out.println("ERROR : " + filename + " not deleted");
+                    }
+                } catch (IOException e) {
+                    if (fileToParse.exists()) {
+                        if (fileToParse.delete()) {
+                            System.out.println("INFO  : " + filename + " deleted");
+                        } else {
+                            System.out.println("ERROR : " + filename + " not deleted");
+                        }
+                    }
+                }
+            }
+        }
+        if (text == null || text.isEmpty() || text.isBlank()) {
+            return new ResponseEntity<>("Can't read this type of file.", HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+        } else {
+            return new ResponseEntity<>(text, HttpStatus.OK);
+        }
+    }
+
+    private String getFileExtension(String fileName) {
+        return fileName.split("\\.")[fileName.split("\\.").length - 1];
     }
 }

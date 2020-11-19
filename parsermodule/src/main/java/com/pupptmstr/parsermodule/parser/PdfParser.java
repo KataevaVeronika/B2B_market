@@ -9,6 +9,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.pdfbox.pdmodel.PDDocument;
 
+import org.apache.pdfbox.text.PDFTextStripper;
 import technology.tabula.ObjectExtractor;
 import technology.tabula.Page;
 import technology.tabula.Table;
@@ -18,7 +19,18 @@ public class PdfParser {
     private PdfParser() {
     }
 
-    public static List<ItemGroup> parse(File file) throws IOException {
+    public static String parseTextBook(File file) throws IOException {
+        PDDocument document = PDDocument.load(file);
+        PDFTextStripper pdfStripper = new PDFTextStripper();
+        pdfStripper.setSortByPosition(true);
+        String text = pdfStripper.getText(document);
+        System.out.println(text);
+
+        document.close();
+        return text;
+    }
+
+    public static List<ItemGroup> parseDocument(File file) throws IOException {
         /* TODO("Проблемы:
              - Производитель один на несколько строк
              - Вертикально ориентированный документ
