@@ -67,7 +67,10 @@ public class UploadController {
     public ResponseEntity<String> parseStudentBook(
             @RequestParam("file") MultipartFile file
     ) {
-        //todo("Придумать что-то с djvu")
+        //todo("Придумать что-то с djvu
+        // есть способ запустить js на сервере? если да, то взять жс либу, и использовать ее как апи
+        // хотя у нас же облако, туда будет сложно закинуть ноду, наверное...
+        // надо читать на сайте облака")
         String text = null;
         String filename = file.getOriginalFilename();
         if (filename != null) {
