@@ -1,12 +1,10 @@
-package com.pupptmstr.parsermodule.parser;
+package com.pupptmstr.parsermodule.servise.parser;
 
 import java.io.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import org.apache.pdfbox.pdmodel.PDDocument;
 
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -162,7 +160,7 @@ public class PdfParser {
     private static Item createItem(String line) {
         Pattern groupPattern =
             Pattern.compile(
-                "(([0-9]+.)( \\|))(( [^|]+)( \\|))(( [^|]+)( \\|))?((.+)( \\|))?(( [A-Za-z\\u0410-\\u042f\\u0430-\\u044f]+)( \\|))?(( [\\u0430-\\u044f0-9. ]+)( \\|))(( [0-9.,/]+)( \\|))(( [0-9.,]+)( \\|))?(.+( \\|))?");
+                "(([0-9]+\\.?)( \\|))(( [^|]+)( \\|))(( [^|]+)( \\|))?((.+)( \\|))?(( [A-Za-z\\u0410-\\u042f\\u0430-\\u044f]+)( \\|))?(( [\\u0430-\\u044f0-9. ]+)( \\|))(( [0-9.,/]+)( \\|))(( [0-9.,]+)( \\|))?(.+( \\|))?");
         Item res = new Item("", "", "", "");
         Matcher matcher = groupPattern.matcher(line);
         if (matcher.matches()) {

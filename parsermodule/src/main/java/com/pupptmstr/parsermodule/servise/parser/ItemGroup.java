@@ -1,4 +1,4 @@
-package com.pupptmstr.parsermodule.parser;
+package com.pupptmstr.parsermodule.servise.parser;
 
 import com.google.gson.annotations.SerializedName;
 

@@ -3,7 +3,7 @@ package com.pupptmstr.parsermodule.servise.models;
 import java.util.*;
 
 import com.google.gson.annotations.SerializedName;
-import com.pupptmstr.parsermodule.parser.ItemGroup;
+import com.pupptmstr.parsermodule.servise.parser.ItemGroup;
 
 public class ResponseFileModel {
     @SerializedName("FileName")
