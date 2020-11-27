@@ -5,6 +5,8 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.pupptmstr.parsermodule.servise.parser.Item;
+import com.pupptmstr.parsermodule.servise.parser.ItemGroup;
 import org.apache.pdfbox.pdmodel.PDDocument;
 
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -14,6 +16,7 @@ import technology.tabula.Table;
 import technology.tabula.extractors.SpreadsheetExtractionAlgorithm;
 
 public class PdfParser {
+
     private PdfParser() {
     }
 
@@ -28,14 +31,45 @@ public class PdfParser {
         return text;
     }
 
+    private static String clearText(String text) {
+        StringBuilder clearText = new StringBuilder();
+        boolean isShouldSkip = false;
+        String[] splitText = text.split("__--__--__");
+        clearText.append("\n__--__--__\n");
+        for (String line : splitText) {
+            String[] splitLineInline = line.split("\n");
+            for (String lineInline : splitLineInline) {
+                String currentLine = lineInline.strip().replace("\r", " ");
+                if (!currentLine.contains("\u041B\u0438\u0441\u0442")
+                    && !currentLine.startsWith("\u041F\u043E\u0437")
+                    && !currentLine.startsWith("\u041D\u0430\u0438\u043C\u0435\u043D\u043E\u0432\u0430\u043D\u0438\u0435")
+                    && !currentLine.contains("\u041F\u0440\u043E\u0432\u0435\u0440\u0438\u043B")
+                    && !isShouldSkip) {
+                    clearText.append(" ").append(currentLine);
+                }
+                if (isShouldSkip) {
+                    isShouldSkip = false;
+                }
+                if (currentLine.contains("\u041B\u0438\u0441\u0442") || currentLine.contains("\u041F\u0440\u043E\u0432\u0435\u0440\u0438\u043B")) {
+                    isShouldSkip = true;
+                }
+            }
+            clearText.append("\n__--__--__\n");
+        }
+        String result = clearText.toString().replace("\n__--__--__\n", "\n").replaceAll("( )+", " ");
+        clearText = new StringBuilder();
+        for (String line : result.split("\n")) {
+            String currentLine = line.strip().replace("\r", " ");
+            if (!currentLine.equals("") && !currentLine.equals(" ")) {
+                clearText.append(currentLine).append("\n");
+            }
+        }
+        result = clearText.toString();
+
+        return result;
+    }
+
     public static List<ItemGroup> parseDocument(File file) throws IOException {
-        /* TODO("Проблемы:
-             - Производитель один на несколько строк
-             - Вертикально ориентированный документ
-             - Перенос названий на новые страницы
-             - Ошибки типа 'отсутствие toUnicode()' (возможное решение - использование OCR)
-             - 2 листа на одной странице(ФЗУ11 - канал.pdf)")
-         */
 
         String unformattedText;
         String formattedText;
@@ -86,44 +120,6 @@ public class PdfParser {
         }
         document.close();
         return result.toString();
-    }
-
-    private static String clearText(String text) {
-        StringBuilder clearText = new StringBuilder();
-        boolean isShouldSkip = false;
-        String[] splitText = text.split("__--__--__");
-        clearText.append("\n__--__--__\n");
-        for (String line : splitText) {
-            String[] splitLineInline = line.split("\n");
-            for (String lineInline : splitLineInline) {
-                String currentLine = lineInline.strip().replace("\r", " ");
-                if (!currentLine.contains("Лист")
-                    && !currentLine.startsWith("Поз")
-                    && !currentLine.startsWith("Наименование")
-                    && !currentLine.contains("Проверил")
-                    && !isShouldSkip) {
-                    clearText.append(" ").append(currentLine);
-                }
-                if (isShouldSkip) {
-                    isShouldSkip = false;
-                }
-                if (currentLine.contains("Лист") || currentLine.contains("Проверил")) {
-                    isShouldSkip = true;
-                }
-            }
-            clearText.append("\n__--__--__\n");
-        }
-        String result = clearText.toString().replace("\n__--__--__\n", "\n").replaceAll("( )+", " ");
-        clearText = new StringBuilder();
-        for (String line : result.split("\n")) {
-            String currentLine = line.strip().replace("\r", " ");
-            if (!currentLine.equals("") && !currentLine.equals(" ")) {
-                clearText.append(currentLine).append("\n");
-            }
-        }
-        result = clearText.toString();
-
-        return result;
     }
 
     private static List<ItemGroup> parseJson(String formattedText) {

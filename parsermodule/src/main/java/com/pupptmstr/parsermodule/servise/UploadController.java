@@ -3,9 +3,9 @@ package com.pupptmstr.parsermodule.servise;
 import java.io.*;
 import java.util.*;
 
-import com.pupptmstr.parsermodule.servise.models.ResponseModel;
 import com.pupptmstr.parsermodule.servise.parser.ItemGroup;
 import com.pupptmstr.parsermodule.servise.parser.PdfParser;
+import com.pupptmstr.parsermodule.servise.respmodels.ResponseModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,12 +19,14 @@ public class UploadController {
     @GetMapping("/parse")
     public String parse() throws IOException {
 
-        return "Use POST requests with @RequestParam('files')";
+        return "Use POST requests to:"
+               + "\n\t-'/parse/document/' with @RequestParam('files')"
+               + "\n\t-'/parse/studbook/' with @RequestParam('file')";
     }
 
     @PostMapping("/parse/document")
     public ResponseEntity<ResponseModel> parseDocument(
-            @RequestParam("files") MultipartFile[] files) throws IOException {
+        @RequestParam("files") MultipartFile[] files) throws IOException {
         Map<String, List<ItemGroup>> parsedFiles = new HashMap<>();
         List<String> errors = new ArrayList<>();
         for (MultipartFile file : files) {
@@ -35,7 +37,7 @@ public class UploadController {
                     try {
                         byte[] bytes = file.getBytes();
                         BufferedOutputStream stream =
-                                new BufferedOutputStream(new FileOutputStream(new File(filename)));
+                            new BufferedOutputStream(new FileOutputStream(new File(filename)));
                         stream.write(bytes);
                         stream.close();
                         parsedFiles.put(filename, PdfParser.parseDocument(fileToParse));
@@ -63,14 +65,10 @@ public class UploadController {
         return new ResponseEntity<>(res, HttpStatus.OK);
     }
 
-    @PostMapping("/parse/studentbook")
+    @PostMapping("/parse/studbook")
     public ResponseEntity<String> parseStudentBook(
-            @RequestParam("file") MultipartFile file
+        @RequestParam("file") MultipartFile file
     ) {
-        //todo("Придумать что-то с djvu
-        // есть способ запустить js на сервере? если да, то взять жс либу, и использовать ее как апи
-        // хотя у нас же облако, туда будет сложно закинуть ноду, наверное...
-        // надо читать на сайте облака")
         String text = null;
         String filename = file.getOriginalFilename();
         if (filename != null) {
@@ -79,7 +77,7 @@ public class UploadController {
                 try {
                     byte[] bytes = file.getBytes();
                     BufferedOutputStream stream =
-                            new BufferedOutputStream(new FileOutputStream(new File(filename)));
+                        new BufferedOutputStream(new FileOutputStream(new File(filename)));
                     stream.write(bytes);
                     stream.close();
                     String extension = getFileExtension(filename);
@@ -115,3 +113,4 @@ public class UploadController {
         return fileName.split("\\.")[fileName.split("\\.").length - 1];
     }
 }
+
