@@ -1,4 +1,4 @@
-package com.pupptmstr.parsermodule.servise.models;
+package com.pupptmstr.parsermodule.servise.respmodels;
 
 import java.util.*;
 
