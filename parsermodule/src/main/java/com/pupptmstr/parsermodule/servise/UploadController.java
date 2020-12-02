@@ -18,7 +18,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class UploadController {
     @GetMapping("/parse")
     public String parse() throws IOException {
-
         return "Use POST requests to:"
                + "\n\t-'/parse/document/' with @RequestParam('files')"
                + "\n\t-'/parse/studbook/' with @RequestParam('file')";
@@ -32,15 +31,20 @@ public class UploadController {
         for (MultipartFile file : files) {
             String filename = file.getOriginalFilename();
             if (filename != null) {
-                File fileToParse = new File(filename);
                 if (!file.isEmpty()) {
+                    File fileToParse = new File("/tmp", filename);
                     try {
                         byte[] bytes = file.getBytes();
                         BufferedOutputStream stream =
-                            new BufferedOutputStream(new FileOutputStream(new File(filename)));
+                            new BufferedOutputStream(new FileOutputStream(fileToParse));
                         stream.write(bytes);
                         stream.close();
-                        parsedFiles.put(filename, PdfParser.parseDocument(fileToParse));
+                        List<ItemGroup> parsedFile = PdfParser.parseDocument(fileToParse);
+                        if (parsedFile.isEmpty()) {
+                            errors.add(filename);
+                        } else {
+                            parsedFiles.put(filename, parsedFile);
+                        }
                         if (fileToParse.delete()) {
                             System.out.println("INFO  : " + filename + " deleted");
                         } else {
@@ -61,7 +65,13 @@ public class UploadController {
                 }
             }
         }
-        ResponseModel res = new ResponseModel(parsedFiles, errors);
+        List<String> errorsRes = new ArrayList<>();
+        for (String errorFileName : errors) {
+            if (!isEmptyOrBlankString(errorFileName)) {
+                errorsRes.add(errorFileName);
+            }
+        }
+        ResponseModel res = new ResponseModel(parsedFiles, errorsRes);
         return new ResponseEntity<>(res, HttpStatus.OK);
     }
 
@@ -72,17 +82,17 @@ public class UploadController {
         String text = null;
         String filename = file.getOriginalFilename();
         if (filename != null) {
-            File fileToParse = new File(filename);
             if (!file.isEmpty()) {
+                File fileToParse = new File(filename);
                 try {
                     byte[] bytes = file.getBytes();
                     BufferedOutputStream stream =
-                        new BufferedOutputStream(new FileOutputStream(new File(filename)));
+                        new BufferedOutputStream(new FileOutputStream(fileToParse));
                     stream.write(bytes);
                     stream.close();
                     String extension = getFileExtension(filename);
 
-                    if (extension.equals("pdf")) {
+                    if ("pdf".equals(extension)) {
                         text = PdfParser.parseTextBook(fileToParse);
                     }
 
@@ -102,15 +112,19 @@ public class UploadController {
                 }
             }
         }
-        if (text == null || text.isEmpty() || text.isBlank()) {
+        if (text == null || isEmptyOrBlankString(text)) {
             return new ResponseEntity<>("Can't read this type of file.", HttpStatus.UNSUPPORTED_MEDIA_TYPE);
         } else {
             return new ResponseEntity<>(text, HttpStatus.OK);
         }
     }
 
-    private String getFileExtension(String fileName) {
+    private static String getFileExtension(String fileName) {
         return fileName.split("\\.")[fileName.split("\\.").length - 1];
+    }
+
+    private static boolean isEmptyOrBlankString(String str) {
+        return (str.isEmpty() || str.isBlank());
     }
 }
 
