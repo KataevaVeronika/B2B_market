@@ -1,7 +1,6 @@
-package com.pupptmstr.parsermodule.servise.parser;
+package com.pupptmstr.parsermodule.service.parser;
 
 import com.google.gson.annotations.SerializedName;
-import com.pupptmstr.parsermodule.servise.parser.Item;
 
 import java.util.ArrayList;
 import java.util.List;

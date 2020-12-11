@@ -1,9 +1,9 @@
-package com.pupptmstr.parsermodule.servise.respmodels;
+package com.pupptmstr.parsermodule.service.respmodels;
 
 import java.util.*;
 
 import com.google.gson.annotations.SerializedName;
-import com.pupptmstr.parsermodule.servise.parser.ItemGroup;
+import com.pupptmstr.parsermodule.service.parser.ItemGroup;
 
 public class ResponseModel {
     @SerializedName("SuccessFiles")

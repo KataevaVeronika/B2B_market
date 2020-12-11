@@ -1,11 +1,11 @@
-package com.pupptmstr.parsermodule.servise;
+package com.pupptmstr.parsermodule.service;
 
 import java.io.*;
 import java.util.*;
 
-import com.pupptmstr.parsermodule.servise.parser.ItemGroup;
-import com.pupptmstr.parsermodule.servise.parser.PdfParser;
-import com.pupptmstr.parsermodule.servise.respmodels.ResponseModel;
+import com.pupptmstr.parsermodule.service.parser.ItemGroup;
+import com.pupptmstr.parsermodule.service.parser.PdfParser;
+import com.pupptmstr.parsermodule.service.respmodels.ResponseModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

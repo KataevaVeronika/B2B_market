@@ -1,22 +1,20 @@
-package com.pupptmstr.parsermodule.servise.parser;
+package com.pupptmstr.parsermodule.service.parser;
 
 import java.io.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.pupptmstr.parsermodule.servise.parser.Item;
-import com.pupptmstr.parsermodule.servise.parser.ItemGroup;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
-
 import org.apache.pdfbox.text.PDFTextStripper;
+
 import technology.tabula.ObjectExtractor;
 import technology.tabula.Page;
 import technology.tabula.Table;
 import technology.tabula.extractors.SpreadsheetExtractionAlgorithm;
 
 public class PdfParser {
-
     private PdfParser() {
     }
 
@@ -25,12 +23,17 @@ public class PdfParser {
         PDFTextStripper pdfStripper = new PDFTextStripper();
         pdfStripper.setSortByPosition(true);
         String text = pdfStripper.getText(document);
-        System.out.println(text);
-
         document.close();
-        return text;
+        StringBuilder res = new StringBuilder();
+        String[] str = text.split("\n");
+        for (String line : str) {
+            String clearLine = line.strip().replace("\r", "");
+            res.append(clearLine).append("\n");
+        }
+        return res.toString();
     }
 
+    @SuppressWarnings({"AvoidEscapedUnicodeCharacters", "LogicConditionNeedOptimization"})
     private static String clearText(String text) {
         StringBuilder clearText = new StringBuilder();
         boolean isShouldSkip = false;
@@ -60,7 +63,7 @@ public class PdfParser {
         clearText = new StringBuilder();
         for (String line : result.split("\n")) {
             String currentLine = line.strip().replace("\r", " ");
-            if (!currentLine.equals("") && !currentLine.equals(" ")) {
+            if (!StringUtils.equals(currentLine, "") && !StringUtils.equals(currentLine, " ")) {
                 clearText.append(currentLine).append("\n");
             }
         }
@@ -70,7 +73,6 @@ public class PdfParser {
     }
 
     public static List<ItemGroup> parseDocument(File file) throws IOException {
-
         String unformattedText;
         String formattedText;
         List<ItemGroup> parsedJson;
@@ -111,7 +113,7 @@ public class PdfParser {
             for (int i = 0; i < table.getRowCount(); i++) {
                 for (int j = 0; j < table.getColCount(); j++) {
                     String text = table.getCell(i, j).getText();
-                    if (!text.equals("")) {
+                    if (!StringUtils.equals(text, "")) {
                         result.append(text).append(" | ");
                     }
                 }
@@ -131,10 +133,9 @@ public class PdfParser {
         for (int i = 0; i < splitText.length; i++) {
             String currentLine = splitText[i];
             Matcher currentMatcher = partOfFirstCellPattern.matcher(currentLine);
-            String nextLine = null;
             Matcher nextLineMatcher = null;
             if (i != splitText.length - 1) {
-                nextLine = splitText[i + 1];
+                String nextLine = splitText[i + 1];
                 nextLineMatcher = partOfFirstCellPattern.matcher(nextLine);
             }
 
@@ -153,6 +154,7 @@ public class PdfParser {
         return res;
     }
 
+    @SuppressWarnings({"MagicNumber", "LineLengthExtended"})
     private static Item createItem(String line) {
         Pattern groupPattern =
             Pattern.compile(
@@ -161,7 +163,15 @@ public class PdfParser {
         Matcher matcher = groupPattern.matcher(line);
         if (matcher.matches()) {
             try {
-                res = new Item(matcher.group(5), matcher.group(11), matcher.group(20), matcher.group(17));
+                int itemAndModelGroupNum = 5;
+                int manufacturerGroupNum = 11;
+                int quantityGroupNum = 20;
+                int measureGroupNum = 17;
+
+                res = new Item(matcher.group(itemAndModelGroupNum),
+                    matcher.group(manufacturerGroupNum),
+                    matcher.group(quantityGroupNum),
+                    matcher.group(measureGroupNum));
             } catch (IndexOutOfBoundsException e) {
                 //res stays empty
             }

@@ -1,4 +1,4 @@
-package com.pupptmstr.parsermodule.servise;
+package com.pupptmstr.parsermodule.service;
 
 import javax.servlet.MultipartConfigElement;
 
