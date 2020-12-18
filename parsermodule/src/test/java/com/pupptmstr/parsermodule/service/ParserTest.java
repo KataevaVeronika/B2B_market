@@ -25,7 +25,7 @@ public class ParserTest {
     public void testDocument() throws IOException, URISyntaxException {
         File fileToRead = getFileFromResources("docs/inputDoc.pdf");
         File expectedFile = getFileFromResources("docs/expectedDoc.txt");
-        String expectedData = getFileData(expectedFile);
+        String expectedData = getFileData(expectedFile).trim().replace("\n", "");
         GsonBuilder builder = new GsonBuilder().setPrettyPrinting();
         Gson gson = builder.create();
         List<ItemGroup> res = PdfParser.parseDocument(fileToRead);

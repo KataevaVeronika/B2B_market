@@ -15,6 +15,17 @@ import technology.tabula.Table;
 import technology.tabula.extractors.SpreadsheetExtractionAlgorithm;
 
 public class PdfParser {
+    static final int ITEM_AND_MODEL_GROUP_NUM = 5;
+    static final int MANUFACTURER_GROUP_NUM = 11;
+    static final int QUANTITY_GROUP_NUM = 20;
+    static final int MEASURE_GROUP_NUM = 17;
+    static final String RUS_SMALL = "\\u0430-\\u044f";
+    static final String RUS_ALL = "\\u0410-\\u042f\\u0430-\\u044f";
+    static final String WORD_LIST = "\u041B\u0438\u0441\u0442";
+    static final String WORD_POZ = "\u041F\u043E\u0437";
+    static final String WORD_NAIMENOVANIE = "\u041D\u0430\u0438\u043C\u0435\u043D\u043E\u0432\u0430\u043D\u0438\u0435";
+    static final String WORD_PROVERIL = "\u041F\u0440\u043E\u0432\u0435\u0440\u0438\u043B";
+
     private PdfParser() {
     }
 
@@ -33,7 +44,7 @@ public class PdfParser {
         return res.toString();
     }
 
-    @SuppressWarnings({"AvoidEscapedUnicodeCharacters", "LogicConditionNeedOptimization"})
+    @SuppressWarnings({ "AvoidEscapedUnicodeCharacters", "LogicConditionNeedOptimization" })
     private static String clearText(String text) {
         StringBuilder clearText = new StringBuilder();
         boolean isShouldSkip = false;
@@ -43,17 +54,17 @@ public class PdfParser {
             String[] splitLineInline = line.split("\n");
             for (String lineInline : splitLineInline) {
                 String currentLine = lineInline.strip().replace("\r", " ");
-                if (!currentLine.contains("\u041B\u0438\u0441\u0442")
-                    && !currentLine.startsWith("\u041F\u043E\u0437")
-                    && !currentLine.startsWith("\u041D\u0430\u0438\u043C\u0435\u043D\u043E\u0432\u0430\u043D\u0438\u0435")
-                    && !currentLine.contains("\u041F\u0440\u043E\u0432\u0435\u0440\u0438\u043B")
+                if (!currentLine.contains(WORD_LIST)
+                    && !currentLine.startsWith(WORD_POZ)
+                    && !currentLine.startsWith(WORD_NAIMENOVANIE)
+                    && !currentLine.contains(WORD_PROVERIL)
                     && !isShouldSkip) {
                     clearText.append(" ").append(currentLine);
                 }
                 if (isShouldSkip) {
                     isShouldSkip = false;
                 }
-                if (currentLine.contains("\u041B\u0438\u0441\u0442") || currentLine.contains("\u041F\u0440\u043E\u0432\u0435\u0440\u0438\u043B")) {
+                if (currentLine.contains(WORD_LIST) || currentLine.contains(WORD_PROVERIL)) {
                     isShouldSkip = true;
                 }
             }
@@ -63,7 +74,7 @@ public class PdfParser {
         clearText = new StringBuilder();
         for (String line : result.split("\n")) {
             String currentLine = line.strip().replace("\r", " ");
-            if (!StringUtils.equals(currentLine, "") && !StringUtils.equals(currentLine, " ")) {
+            if (StringUtils.isBlank(currentLine)) {
                 clearText.append(currentLine).append("\n");
             }
         }
@@ -113,7 +124,7 @@ public class PdfParser {
             for (int i = 0; i < table.getRowCount(); i++) {
                 for (int j = 0; j < table.getColCount(); j++) {
                     String text = table.getCell(i, j).getText();
-                    if (!StringUtils.equals(text, "")) {
+                    if (!StringUtils.isEmpty(text)) {
                         result.append(text).append(" | ");
                     }
                 }
@@ -126,7 +137,7 @@ public class PdfParser {
 
     private static List<ItemGroup> parseJson(String formattedText) {
         Pattern partOfFirstCellPattern =
-            Pattern.compile("(([0-9]+.?)( \\| ))([A-Za-z\\u0410-\\u042f\\u0430-\\u044f0-9()\\-=,./ ]+( \\|))+");
+            Pattern.compile("(([0-9]+.?)( \\| ))([A-Za-z" + RUS_ALL + "0-9()\\-=,./ ]+( \\|))+");
         List<ItemGroup> res = new ArrayList<>();
         ItemGroup itemGroup = new ItemGroup("");
         String[] splitText = formattedText.split("\n");
@@ -154,27 +165,19 @@ public class PdfParser {
         return res;
     }
 
-    @SuppressWarnings({"MagicNumber", "LineLengthExtended"})
     private static Item createItem(String line) {
         Pattern groupPattern =
             Pattern.compile(
-                "(([0-9]+\\.?)( \\|))(( [^|]+)( \\|))(( [^|]+)( \\|))?((.+)( \\|))?(( [A-Za-z\\u0410-\\u042f\\u0430-\\u044f]+)( \\|))?(( [\\u0430-\\u044f0-9. ]+)( \\|))(( [0-9.,/]+)( \\|))(( [0-9.,]+)( \\|))?(.+( \\|))?");
+                "(([0-9]+\\.?)( \\|))(( [^|]+)( \\|))(( [^|]+)( \\|))?((.+)( \\|))?"
+                + "(( [A-Za-z" + RUS_ALL + "]+)( \\|))?(( [" + RUS_SMALL + "0-9. ]+)( \\|))"
+                + "(( [0-9.,/]+)( \\|))(( [0-9.,]+)( \\|))?(.+( \\|))?");
         Item res = new Item("", "", "", "");
         Matcher matcher = groupPattern.matcher(line);
-        if (matcher.matches()) {
-            try {
-                int itemAndModelGroupNum = 5;
-                int manufacturerGroupNum = 11;
-                int quantityGroupNum = 20;
-                int measureGroupNum = 17;
-
-                res = new Item(matcher.group(itemAndModelGroupNum),
-                    matcher.group(manufacturerGroupNum),
-                    matcher.group(quantityGroupNum),
-                    matcher.group(measureGroupNum));
-            } catch (IndexOutOfBoundsException e) {
-                //res stays empty
-            }
+        if (matcher.matches() && matcher.groupCount() >= QUANTITY_GROUP_NUM) {
+            res = new Item(matcher.group(ITEM_AND_MODEL_GROUP_NUM),
+                matcher.group(MANUFACTURER_GROUP_NUM),
+                matcher.group(QUANTITY_GROUP_NUM),
+                matcher.group(MEASURE_GROUP_NUM));
         }
         return res;
     }

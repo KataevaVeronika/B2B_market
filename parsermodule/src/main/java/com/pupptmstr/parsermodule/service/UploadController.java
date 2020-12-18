@@ -2,6 +2,7 @@ package com.pupptmstr.parsermodule.service;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import com.pupptmstr.parsermodule.service.parser.ItemGroup;
 import com.pupptmstr.parsermodule.service.parser.PdfParser;
@@ -16,16 +17,17 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 public class UploadController {
+    private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(UploadController.class);
+
     @GetMapping("/parse")
-    public String parse() throws IOException {
+    public String parse() {
         return "Use POST requests to:"
                + "\n\t-'/parse/document/' with @RequestParam('files')"
                + "\n\t-'/parse/studbook/' with @RequestParam('file')";
     }
 
     @PostMapping("/parse/document")
-    public ResponseEntity<ResponseModel> parseDocument(
-        @RequestParam("files") MultipartFile[] files) throws IOException {
+    public ResponseEntity<ResponseModel> parseDocument(@RequestParam("files") MultipartFile[] files) {
         Map<String, List<ItemGroup>> parsedFiles = new HashMap<>();
         List<String> errors = new ArrayList<>();
         for (MultipartFile file : files) {
@@ -34,29 +36,15 @@ public class UploadController {
                 if (!file.isEmpty()) {
                     File fileToParse = new File("/tmp", filename);
                     try {
-                        byte[] bytes = file.getBytes();
-                        BufferedOutputStream stream =
-                            new BufferedOutputStream(new FileOutputStream(fileToParse));
-                        stream.write(bytes);
-                        stream.close();
-                        List<ItemGroup> parsedFile = PdfParser.parseDocument(fileToParse);
-                        if (parsedFile.isEmpty()) {
-                            errors.add(filename);
-                        } else {
-                            parsedFiles.put(filename, parsedFile);
-                        }
-                        if (fileToParse.delete()) {
-                            System.out.println("INFO  : " + filename + " deleted");
-                        } else {
-                            System.out.println("ERROR : " + filename + " not deleted");
-                        }
+                        downloadFile(file, fileToParse);
+                        parseDoc(parsedFiles, errors, fileToParse, filename);
                     } catch (IOException e) {
                         errors.add(filename);
                         if (fileToParse.exists()) {
                             if (fileToParse.delete()) {
-                                System.out.println("INFO  : " + filename + " deleted");
+                                log.info(filename + " deleted");
                             } else {
-                                System.out.println("ERROR : " + filename + " not deleted");
+                                log.error(filename + " not deleted");
                             }
                         }
                     }
@@ -65,12 +53,10 @@ public class UploadController {
                 }
             }
         }
-        List<String> errorsRes = new ArrayList<>();
-        for (String errorFileName : errors) {
-            if (!isEmptyOrBlankString(errorFileName)) {
-                errorsRes.add(errorFileName);
-            }
-        }
+        List<String> errorsRes = errors.stream()
+                                       .filter(errorFileName -> !errorFileName.isBlank())
+                                       .collect(Collectors.toList());
+
         ResponseModel res = new ResponseModel(parsedFiles, errorsRes);
         return new ResponseEntity<>(res, HttpStatus.OK);
     }
@@ -79,52 +65,62 @@ public class UploadController {
     public ResponseEntity<String> parseStudentBook(
         @RequestParam("file") MultipartFile file
     ) {
-        String text = null;
         String filename = file.getOriginalFilename();
-        if (filename != null) {
-            if (!file.isEmpty()) {
-                File fileToParse = new File(filename);
-                try {
-                    byte[] bytes = file.getBytes();
-                    BufferedOutputStream stream =
-                        new BufferedOutputStream(new FileOutputStream(fileToParse));
-                    stream.write(bytes);
-                    stream.close();
-                    String extension = getFileExtension(filename);
+        if (filename == null || file.isEmpty()) {
+            return new ResponseEntity<>("Can't read this type of file.", HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+        } else {
+            String text = null;
+            File fileToParse = new File(filename);
+            try {
+                downloadFile(file, fileToParse);
+                String extension = getFileExtension(filename);
 
-                    if ("pdf".equals(extension)) {
-                        text = PdfParser.parseTextBook(fileToParse);
-                    }
+                if ("pdf".equals(extension)) {
+                    text = PdfParser.parseTextBook(fileToParse);
+                }
 
+                if (fileToParse.delete()) {
+                    log.info(filename + " deleted");
+                } else {
+                    log.error(filename + " not deleted");
+                }
+            } catch (IOException e) {
+                if (fileToParse.exists()) {
                     if (fileToParse.delete()) {
-                        System.out.println("INFO  : " + filename + " deleted");
+                        log.info(filename + " deleted");
                     } else {
-                        System.out.println("ERROR : " + filename + " not deleted");
-                    }
-                } catch (IOException e) {
-                    if (fileToParse.exists()) {
-                        if (fileToParse.delete()) {
-                            System.out.println("INFO  : " + filename + " deleted");
-                        } else {
-                            System.out.println("ERROR : " + filename + " not deleted");
-                        }
+                        log.error(filename + " not deleted");
                     }
                 }
             }
-        }
-        if (text == null || isEmptyOrBlankString(text)) {
-            return new ResponseEntity<>("Can't read this type of file.", HttpStatus.UNSUPPORTED_MEDIA_TYPE);
-        } else {
             return new ResponseEntity<>(text, HttpStatus.OK);
+        }
+    }
+
+    private static void downloadFile(MultipartFile fileToRead, File fileToWrite) throws IOException {
+        byte[] bytes = fileToRead.getBytes();
+        BufferedOutputStream stream =
+            new BufferedOutputStream(new FileOutputStream(fileToWrite));
+        stream.write(bytes);
+        stream.close();
+    }
+
+    private void parseDoc(Map<String, List<ItemGroup>> parsedFiles, List<String> errors, File fileToParse, String filename) throws IOException {
+        List<ItemGroup> parsedFile = PdfParser.parseDocument(fileToParse);
+        if (parsedFile.isEmpty()) {
+            errors.add(filename);
+        } else {
+            parsedFiles.put(filename, parsedFile);
+        }
+        if (fileToParse.delete()) {
+            log.info(filename + " deleted");
+        } else {
+            log.error(filename + " not deleted");
         }
     }
 
     private static String getFileExtension(String fileName) {
         return fileName.split("\\.")[fileName.split("\\.").length - 1];
-    }
-
-    private static boolean isEmptyOrBlankString(String str) {
-        return (str.isEmpty() || str.isBlank());
     }
 }
 
