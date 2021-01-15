@@ -8,6 +8,8 @@ import com.pupptmstr.parsermodule.service.parser.ItemGroup;
 import com.pupptmstr.parsermodule.service.parser.PdfParser;
 import com.pupptmstr.parsermodule.service.respmodels.ResponseModel;
 import org.springframework.http.HttpStatus;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,7 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 public class UploadController {
-    private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(UploadController.class);
+    private static final Logger log = LogManager.getLogger("UploadController");
 
     @GetMapping("/parse")
     public String parse() {
@@ -35,17 +37,15 @@ public class UploadController {
             if (filename != null) {
                 if (!file.isEmpty()) {
                     File fileToParse = new File("/tmp", filename);
-                    try {
-                        downloadFile(file, fileToParse);
+                    try (BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(fileToParse))) {
+                        stream.write(file.getBytes());
                         parseDoc(parsedFiles, errors, fileToParse, filename);
-                    } catch (IOException e) {
+                    } catch (Exception e) {
                         errors.add(filename);
+                        log.error("Unable to process files", e);
+                    } finally {
                         if (fileToParse.exists()) {
-                            if (fileToParse.delete()) {
-                                log.info(filename + " deleted");
-                            } else {
-                                log.error(filename + " not deleted");
-                            }
+                            fileToParse.delete();
                         }
                     }
                 } else {
@@ -62,39 +62,29 @@ public class UploadController {
     }
 
     @PostMapping("/parse/studbook")
-    public ResponseEntity<String> parseStudentBook(
-        @RequestParam("file") MultipartFile file
-    ) {
+    public ResponseEntity<String> parseStudentBook(@RequestParam("file") MultipartFile file) {
         String filename = file.getOriginalFilename();
+
         if (filename == null || file.isEmpty()) {
             return new ResponseEntity<>("Can't read this type of file.", HttpStatus.UNSUPPORTED_MEDIA_TYPE);
-        } else {
-            String text = null;
-            File fileToParse = new File(filename);
-            try {
-                downloadFile(file, fileToParse);
-                String extension = getFileExtension(filename);
-
-                if ("pdf".equals(extension)) {
-                    text = PdfParser.parseTextBook(fileToParse);
-                }
-
-                if (fileToParse.delete()) {
-                    log.info(filename + " deleted");
-                } else {
-                    log.error(filename + " not deleted");
-                }
-            } catch (IOException e) {
-                if (fileToParse.exists()) {
-                    if (fileToParse.delete()) {
-                        log.info(filename + " deleted");
-                    } else {
-                        log.error(filename + " not deleted");
-                    }
-                }
-            }
-            return new ResponseEntity<>(text, HttpStatus.OK);
         }
+
+        String text = null;
+        File fileToParse = new File("/tmp", filename);
+        try (BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(fileToParse))) {
+            stream.write(file.getBytes());
+            String extension = getFileExtension(filename);
+            if ("pdf".equals(extension)) {
+                text = PdfParser.parseTextBook(fileToParse);
+            }
+        } catch (IOException e) {
+            log.error("Unable to process files", e);
+        } finally {
+            if (fileToParse.exists()) {
+                fileToParse.delete();
+            }
+        }
+        return new ResponseEntity<>(text, HttpStatus.OK);
     }
 
     private static void downloadFile(MultipartFile fileToRead, File fileToWrite) throws IOException {
@@ -111,11 +101,6 @@ public class UploadController {
             errors.add(filename);
         } else {
             parsedFiles.put(filename, parsedFile);
-        }
-        if (fileToParse.delete()) {
-            log.info(filename + " deleted");
-        } else {
-            log.error(filename + " not deleted");
         }
     }
 
